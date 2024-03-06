@@ -56,7 +56,8 @@ def get_rays(height, width, focal, pose):
     transformed_dirs = directions[..., None, :] #dimensions [height, width,1 , 3]
     camera_dirs = transformed_dirs * camera_matrix #dimensions [height, width,1 , 3]
     ray_directions = tf.reduce_sum(camera_dirs, axis=-1) #dimensions [height, width,1]
-    ray_origins = tf.broadcast_to(height_width_focal, tf.shape(ray_directions))
+    ray_origins = tf.broadcast_to(height_width_focal, tf.shape(ray_directions)) 
+            #dimensions [height, width,3]
 
     return(ray_origins, ray_directions)
 
@@ -67,4 +68,11 @@ def render_flat_rays(ray_origins, ray_directions, near, far, num_samples, rand=F
         noise = tf.random.uniform(shape=shape) * (far - near) / num_samples
         t_vals = t_vals + noise
 
-    rays = ray_origins[..., ]
+    # Equation: r(t) = o + td -> Building the "r" here.
+    rays = ray_origins[..., None, :] + (
+        ray_directions[..., None, :] * t_vals[..., None]
+    )
+    rays_flat = tf.reshape(rays, [-1, 3])
+    rays_flat = encode_position(rays_flat)
+    return (rays_flat, t_vals)
+
