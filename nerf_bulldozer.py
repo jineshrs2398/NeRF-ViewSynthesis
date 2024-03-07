@@ -76,3 +76,58 @@ def render_flat_rays(ray_origins, ray_directions, near, far, num_samples, rand=F
     rays_flat = encode_position(rays_flat)
     return (rays_flat, t_vals)
 
+def map_fn(pose):
+    # Maps individual pose to flattened rays and sample points
+    (ray_origins, ray_directions) = get_rays(height=H, width=W,
+                                             focal=focal, pose=pose)
+    (rays_flat, t_vals) = render_flat_rays(ray_origins=ray_origins,
+                            ray_directions=ray_directions,
+                            near=2.0,
+                            far=6.0,
+                            num_samples=NUM_SAMPLES,
+                            rand=True)
+    
+    return (rays_flat, t_vals)
+
+#training split
+split_index= int(num_images*0.8)
+
+train_images = images[:split_index]
+val_images = images[split_index:]
+
+train_poses = poses[:split_index]
+val_poses = poses[split_index:]
+
+#Pipeline for training
+train_img_ds = tf.data.Dataset.from_tensor_slices(train_images)
+train_pose_ds = tf.data.Dataset.from_tensor_slices(train_poses)
+train_ray_ds = train_pose_ds.map(map_fn, num_parallel_calls=AUTO)
+ #From pose getting rays
+training_ds = tf.data.Dataset.zip((train_img_ds, train_ray_ds))
+train_ds = (
+    training_ds.shuffle(BATCH_SIZE)
+    .batch(BATCH_SIZE, drop_remainder=True, num_parallel_calls = AUTO)
+    .prefetch(AUTO)
+)
+
+#Pipeline for validation 
+val_img_ds = tf.data.Dataset.from_tensor_slices(val_images)
+val_pose_ds = tf.data.Dataset.from_tensor_slices(val_poses)
+val_ray_ds = val_pose_ds.map(map_fn, num_parallel_calls = AUTO)
+validation_ds = tf.data.Dataset.zip((val_img_ds, val_ray_ds))
+val_ds = (
+    validation_ds.shuffle(BATCH_SIZE)
+    .batch(BATCH_SIZE, drop_remainder=True, num_parallel_calls=AUTO)
+    .prefetch(AUTO)
+)
+
+def get_nerf_model(num_layers, num_pos):
+    inputs = tf.keras.Input(shape=(num_pos, 2*3*POS_ENCODE_DIMS +3))
+    x = inputs
+    for i in range(num_layers):
+        x = tf.keras.layers.Dense(units=64, activation="relu")(x)
+        if i % 4 == 0 and i > 0:
+            x = tf.keras.layers.concatenate([x, inputs], axis=-1)
+
+    outputs = tf.keras.layers.Dense(units=4)(x)
+    return tf.keras.Model(inputs=inputs, outputs=outputs)
