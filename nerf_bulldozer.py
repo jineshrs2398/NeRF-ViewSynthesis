@@ -131,3 +131,16 @@ def get_nerf_model(num_layers, num_pos):
 
     outputs = tf.keras.layers.Dense(units=4)(x)
     return tf.keras.Model(inputs=inputs, outputs=outputs)
+
+def render_rgb_depth(model, rays_flat, t_vals, rand=True, train=True):
+    # Generate RGB image and depth map from model predictions
+
+    if train:
+        predictions = model(rays_flat)
+    else:
+        predictions = model.predict(rays_flat)
+    predictions = tf.reshape(predictions, shape=(BATCH_SIZE, H, W, NUM_SAMPLES, 4))
+
+    rgb = tf.sigmoid(predictions[..., :-1])
+    sigma_a = tf.nn.relu(predictions[..., -1])
+      
