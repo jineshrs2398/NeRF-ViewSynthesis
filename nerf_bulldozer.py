@@ -143,4 +143,28 @@ def render_rgb_depth(model, rays_flat, t_vals, rand=True, train=True):
 
     rgb = tf.sigmoid(predictions[..., :-1])
     sigma_a = tf.nn.relu(predictions[..., -1])
-      
+
+    delta = t_vals[..., 1:] - t_vals[..., :-1]
+    if rand:
+        delta = tf.concat(
+            [delta, tf.broadcast_to([1e10], shape=(BATCH_SIZE, H, W, 1))], axis=-1
+        )  
+        alpha = 1.0 - tf.exp(-sigma_a * delta)
+    else:
+        delta = tf.concat(
+            [delta, tf.broadcast_to([1e10], shape=(BATCH_SIZE, H, W, 1))], axis=-1
+        )
+        alpha = 1.0 - tf.exp(-sigma_a * delta[:, None, None, :])
+
+    #Get Transmittance
+    exp_term = 1.0 - alpha 
+    epsilon = 1e-10
+    transmittance = tf.math.cumprod(exp_term + epsilon, axis=-1, exclusive=True)
+    weights = alpha * transmittance
+    rgb = tf.reduce_sum(weights[..., None] * rgb, axis=-2)
+
+    if rand:
+        depth_map = tf.reduce_sum(weights * t_vals, axis=-1)
+    else:
+        depth_map = tf.reduce_sum(weights * t_vals[:, None, None], axis=-1)
+    return (rgb, depth_map)
