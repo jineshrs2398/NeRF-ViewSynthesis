@@ -5,6 +5,7 @@ import imageio.v2 as imageio
 import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from tensorflow import keras
 
 #initialize global variables
 AUTO = tf.data.AUTOTUNE
@@ -168,3 +169,27 @@ def render_rgb_depth(model, rays_flat, t_vals, rand=True, train=True):
     else:
         depth_map = tf.reduce_sum(weights * t_vals[:, None, None], axis=-1)
     return (rgb, depth_map)
+
+class NeRF(keras.Model):
+    def __init__(self, nerf_model):
+        super().__init__()
+        self.nerf_model = nerf_model
+
+    def compile(self, optimizer, loss_fn):
+        super().compile()
+        self.optimizer = optimizer
+        self.loss_fn = loss_fn
+        self.loss_tracker = keras.metrics.Mean(name="loss")
+        self.psnr_metric = keras.metrics.Mean(name="psnr")
+
+    def train_step(self, inputs):
+        # Get the images and the rays
+        (images, rays) = inputs
+        (rays_flat, t_vals) = rays
+
+        with tf.GradientTape() as tape:
+            #Get the predictions from the model
+            rgb, _ = render_rgb_depth(
+                model=self.nerf_model, rays_flat=rays_flat, t_vals=t_vals, rand=True
+            )
+            
