@@ -1,7 +1,7 @@
 # NeRF-ViewSynthesis
 
 This implementation introduces a minimal version of NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis, as described in the [original NeRF paper](https://arxiv.org/abs/2003.08934) by Ben Mildenhall et al. It demonstrates how novel views of a scene can be synthesized by modeling the volumetric scene function through a neural network.
-
+![Nerf GIF](https://github.com/jineshrs2398/NeRF-ViewSynthesis/blob/main/nerf.gif)
 
 ## Setup
 
@@ -27,13 +27,8 @@ This script will automatically download the dataset, initiate training, and save
 
 ## Inference
 
-After training, the model can synthesize novel views of the scene by specifying different camera poses. The `render_rgb_depth` function generates RGB images and depth maps from the learned model, showcasing the model's ability to infer 3D scenes from a sparse set of 2D images.
-![Nerf GIF](https://github.com/jineshrs2398/NeRF-ViewSynthesis/blob/main/nerf.gif)
+The training was run for 1000 epochs and the model can synthesize novel views of the scene by specifying different camera poses. The `render_rgb_depth` function generates RGB images and depth maps from the learned model, showcasing the model's ability to infer 3D scenes from a sparse set of 2D images.
 
-
-## Results
-
-Training the model on the provided dataset allows it to recreate novel views of the scene, demonstrating the power of NeRF in synthesizing photorealistic images of complex scenes.
 
 ## Reference and Further Reading
 
