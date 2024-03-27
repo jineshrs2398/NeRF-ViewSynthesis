@@ -21,7 +21,7 @@ The model is a Multi-Layer Perceptron (MLP) that takes encoded positions and vie
 To train the model, simply run:
 
 ```bash
-python nerf.py
+python nerf_bulldozer.py
 ```
 This script will automatically download the dataset, initiate training, and save the generated images during training to the `images/` directory. Training parameters such as the batch size, number of samples, and epochs are configured within the script.
 
